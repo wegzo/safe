@@ -4,8 +4,9 @@
 #include <openssl/crypto.h>
 #include <time.h>
 #include <cstdlib>
+#include <exception>
 
-encryption::encryption()
+encryption::encryption() : ctx(NULL)
 {
     srand((unsigned int)time(NULL));
 }
@@ -13,9 +14,21 @@ encryption::encryption()
 void encryption::handle_errors()
 {
     // TODO: cleanup everything when switching to throw
+    /*
     ERR_print_errors_fp(stderr);
     system("pause");
     exit(0);
+    */
+
+    memset(this->plaintext, 0, sizeof(this->plaintext));
+    memset(this->ciphertext, 0, sizeof(this->ciphertext));
+    if(this->ctx != NULL)
+    {
+        EVP_CIPHER_CTX_cleanup(this->ctx);
+        EVP_CIPHER_CTX_free(this->ctx);
+        this->ctx = NULL;
+    }
+    throw error("Couldn't decrypt file");
 }
 
 // TODO: streams may leak info
@@ -59,6 +72,7 @@ int encryption::make_encryption(
     memset(this->ciphertext, 0, sizeof(this->ciphertext));
     EVP_CIPHER_CTX_cleanup(this->ctx);
     EVP_CIPHER_CTX_free(this->ctx);
+    this->ctx = NULL;
 
     return ciphertext_len;
 }
@@ -81,10 +95,11 @@ int encryption::decrypt(
         ciphertext_stream, ciphertext_len, key_256, iv, plaintext_stream);
 }
 
-void encryption::derive_key(const char* password, const std::string& salt, unsigned char* out_key_256)
+void encryption::derive_key(const char* password, int passlen, const std::string& salt, unsigned char* out_key_256)
 {
+    // TODO: derive key not expected to throw
     if(PKCS5_PBKDF2_HMAC(
-        password, strlen(password), (unsigned char*)salt.c_str(), salt.length(), 
+        password, passlen, (unsigned char*)salt.c_str(), salt.length(), 
         key_iterations, EVP_sha256(), 256 / 8, out_key_256) != 1)
         handle_errors();
 }

@@ -10,7 +10,8 @@
 // TODO: secure memory
 class filesystem
 {
-private:
+public:
+    static const int pass_len = 20;
     static const int salt_len = 12;
     static const int max_files = 128;
     static const int max_name = 16;
@@ -27,7 +28,7 @@ private:
     {
         file files[max_files];
     };
-public:
+
     typedef std::vector<std::pair<std::vector<char>, std::string>> files_t;
 private:
     std::string path;
@@ -38,9 +39,15 @@ private:
     void read_file(const char* password_160);
     void write_file();
 public:
-    explicit filesystem(const std::string& path, const char* password_160);
+    filesystem();
     ~filesystem();
     
+    // throws and invalids object
+    void load_archive(const std::string& path, const char* password_160);
+    // won't throw as of now
+    void save_archive();
+
+    void change_password(const char* password_160);
     bool add(std::istream& file, const std::string& name);
     bool add(const std::string& path, const std::string& name);
     bool remove(const std::string& name);

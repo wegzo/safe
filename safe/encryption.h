@@ -3,6 +3,7 @@
 #include <openssl/evp.h>
 #include <iostream>
 #include <string>
+#include <exception>
 
 class encryption
 {
@@ -17,6 +18,12 @@ public:
 
     static void create_salt(std::string& salt, size_t size);
     static void create_iv(unsigned char* iv_128);
+
+    class error : public std::exception
+    {
+    public:
+        explicit error(const char* what) : exception(what) {}
+    };
 private:
     EVP_CIPHER_CTX* ctx;
     unsigned char plaintext[plaintext_size];
@@ -35,5 +42,5 @@ public:
     int decrypt(
         std::istream& ciphertext_stream, size_t ciphertext_len, const unsigned char* key_256,
         const unsigned char* iv, std::ostream& plaintext_stream);
-    void derive_key(const char* password, const std::string& salt, unsigned char* out_key_256);
+    void derive_key(const char* password, int passlen, const std::string& salt, unsigned char* out_key_256);
 };

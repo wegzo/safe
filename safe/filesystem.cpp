@@ -2,9 +2,9 @@
 #include <sstream>
 #include <fstream>
 
-filesystem::filesystem(const std::string& path, const char* password_160) : path(path)
+filesystem::filesystem()// : path(path)
 {
-    this->read_file(password_160);
+    //this->read_file(password_160);
     
     /*encryption::create_salt(this->salt, 12);
     encryption().derive_key(password_160, this->salt, this->key_256);
@@ -61,7 +61,24 @@ filesystem::filesystem(const std::string& path, const char* password_160) : path
 
 filesystem::~filesystem()
 {
+    //this->write_file();
+}
+
+void filesystem::load_archive(const std::string& path, const char* password_160)
+{
+    this->path = path;
+    this->read_file(password_160);
+}
+
+void filesystem::save_archive()
+{
     this->write_file();
+}
+
+void filesystem::change_password(const char* password_160)
+{
+    encryption e;
+    e.derive_key(password_160, pass_len, this->salt, this->key_256);
 }
 
 void filesystem::read_file(const char* password_160)
@@ -69,6 +86,7 @@ void filesystem::read_file(const char* password_160)
     std::ifstream in(this->path, std::ios_base::binary);
     std::stringstream blob;
 
+    in.exceptions(std::ios_base::eofbit | std::ios_base::failbit | std::ios_base::badbit);
     // read
     in.seekg(-salt_len, std::ios_base::end);
     const size_t in_len = in.tellg();
@@ -80,7 +98,7 @@ void filesystem::read_file(const char* password_160)
     // unencrypt
     encryption e;
     unsigned char iv[128 / 8];
-    e.derive_key(password_160, this->salt, this->key_256);
+    e.derive_key(password_160, pass_len, this->salt, this->key_256);
     const int plain_len = e.decrypt(in, in_len, this->key_256, iv, blob);
 
     // serialize
