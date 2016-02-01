@@ -1,2 +1,2 @@
 # safe
-Simple text file container with AES encryptiom.
+Simple text file container with AES encryption.
