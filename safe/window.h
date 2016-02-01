@@ -2,6 +2,7 @@
 
 #include "formview.h"
 
+#define ARCHIVE_PATH "safe.txt"
 #define WIN_WIDTH 308
 #define WIN_HEIGHT 260
 #define GET(type, item) reinterpret_cast<type&>(this->GetDlgItem(item))
@@ -22,10 +23,12 @@ public:
         COMMAND_ID_HANDLER(ID_FILE_ADDNEWFILE, OnFileAddnewfile)
         COMMAND_ID_HANDLER(ID_FILE_CHANGEPASSWORD, OnChangePassword)
         COMMAND_ID_HANDLER(ID_FILE_EXIT, OnFileExit)
+        COMMAND_ID_HANDLER(ID_FILE_CREATENEWARCHIVE, OnFileCreatenewarchive)
     END_MSG_MAP()
 
     LRESULT OnCreate(LPCREATESTRUCT);
     LRESULT OnFileAddnewfile(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
     LRESULT OnChangePassword(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
     LRESULT OnFileExit(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+    LRESULT OnFileCreatenewarchive(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 };

@@ -1,67 +1,32 @@
 #include "filesystem.h"
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
 #include <sstream>
 #include <fstream>
 
-filesystem::filesystem()// : path(path)
+filesystem::filesystem()
 {
-    //this->read_file(password_160);
-    
-    /*encryption::create_salt(this->salt, 12);
-    encryption().derive_key(password_160, this->salt, this->key_256);
-    std::ifstream in("test.txt", std::ios_base::binary);
-    for(int i = 0; i < 100; i++)
-    {
-        files.push_back(files_t::value_type());
-        files_t::reference last = files.back();
-
-        std::copy(
-            std::istreambuf_iterator<char>(in),
-            std::istreambuf_iterator<char>(),
-            std::back_inserter(last.first));
-        in.seekg(0);
-        last.second = "test.txt";
-    }
-    this->write_file();*/
-    
-
-    /*
-    //if(!this->read_directory())
-    //{
-        // testing
-        memset(&this->dir, 0, sizeof(this->dir));
-        this->dir.files[0].offset = 0;
-        this->dir.files[0].encrypted_size = 5;
-        this->dir.files[0].name[0] = 'a';
-        this->dir.files[0].name[1] = 'b';
-        this->dir.files[0].extension[0] = 'j';
-
-        std::stringstream sts;
-        std::ofstream file(path, std::ios_base::binary);
-        // salt: 12 bytes, pass: 20 bytes (total 32 bytes)
-        // generate salt
-        std::string salt;
-        encryption::create_salt(salt, 12);
-        // password
-        char pass[20+1] = "hunter1aaaaaaaaaaaaa";
-
-        encryption e;
-        // 256 bit key
-        unsigned char key[256 / 8];
-        e.derive_key(pass, salt, key);
-        // 128bit randomly generated iv
-        unsigned char iv[128 / 8];
-        encryption::create_iv(iv);
-        sts.write((char*)iv, sizeof(iv));
-        // write data
-        this->serialize_directory(sts);
-        int ciph_len = e.encrypt(sts, sts.tellp(), key, iv, file);
-    //}
-    */
 }
 
 filesystem::~filesystem()
 {
-    //this->write_file();
+    SecureZeroMemory(this->key_256, sizeof(this->key_256));
+    this->clear_files();
+}
+
+void filesystem::clear_files()
+{
+    for(files_t::iterator it = this->files.begin(); it != this->files.end(); it++)
+        SecureZeroMemory(it->first.data(), it->first.size());
+    this->files.clear();
+}
+
+void filesystem::create_archive(const std::string& path, const char* password_160)
+{
+    this->clear_files();
+
+    this->path = path;
+    this->change_password(password_160);
 }
 
 void filesystem::load_archive(const std::string& path, const char* password_160)
@@ -78,6 +43,7 @@ void filesystem::save_archive()
 void filesystem::change_password(const char* password_160)
 {
     encryption e;
+    e.create_salt(this->salt, salt_len);
     e.derive_key(password_160, pass_len, this->salt, this->key_256);
 }
 
@@ -90,9 +56,9 @@ void filesystem::read_file(const char* password_160)
     // read
     in.seekg(-salt_len, std::ios_base::end);
     const size_t in_len = in.tellg();
-    char salt[salt_len + 1] = {0};
+    char salt[salt_len] = {0};
     in.read(salt, salt_len);
-    this->salt = salt;
+    this->salt.assign(salt, salt_len);
     in.seekg(0, std::ios_base::beg);
 
     // unencrypt
@@ -104,7 +70,7 @@ void filesystem::read_file(const char* password_160)
     // serialize
     // TODO: enable filestream exceptions & create new
     int cur_pos = plain_len - directory_size;
-    this->files.clear();
+    this->clear_files();
     for(size_t i = 0; i < max_files; i++)
     {
         blob.seekg(cur_pos);
@@ -133,6 +99,8 @@ void filesystem::read_file(const char* password_160)
         }
         last.second = name;
     }
+
+    // TODO: clear blob
 }
 
 void filesystem::write_file()
@@ -176,6 +144,8 @@ void filesystem::write_file()
     std::ofstream file(this->path, std::ios_base::binary | std::ios_base::trunc);
     const int ciph_len = e.encrypt(blob, blob.tellp(), this->key_256, iv, file);
     file.write(this->salt.c_str(), this->salt.length());
+
+    // TODO: clear blob
 }
 
 bool filesystem::add(std::istream& file, const std::string& name)
@@ -205,6 +175,7 @@ bool filesystem::remove(const std::string& name)
     files_t::iterator it = this->get(name);
     if(it != this->files.end())
     {
+        SecureZeroMemory(it->first.data(), it->first.size());
         this->files.erase(it);
         return true;
     }

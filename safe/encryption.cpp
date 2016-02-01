@@ -2,26 +2,30 @@
 #include <openssl/err.h>
 #include <openssl/sha.h>
 #include <openssl/crypto.h>
-#include <time.h>
-#include <cstdlib>
+#include <openssl/rand.h>
 #include <exception>
+
+bool encryption::random_initalized = false;
 
 encryption::encryption() : ctx(NULL)
 {
-    srand((unsigned int)time(NULL));
+    if(!random_initalized)
+    {
+        RAND_poll();
+        random_initalized = true;
+    }
 }
 
 void encryption::handle_errors()
 {
-    // TODO: cleanup everything when switching to throw
     /*
     ERR_print_errors_fp(stderr);
     system("pause");
     exit(0);
     */
 
-    memset(this->plaintext, 0, sizeof(this->plaintext));
-    memset(this->ciphertext, 0, sizeof(this->ciphertext));
+    SecureZeroMemory(this->plaintext, sizeof(this->plaintext));
+    SecureZeroMemory(this->ciphertext, sizeof(this->ciphertext));
     if(this->ctx != NULL)
     {
         EVP_CIPHER_CTX_cleanup(this->ctx);
@@ -68,8 +72,8 @@ int encryption::make_encryption(
         ciphertext_stream.write((char*)this->ciphertext, len);
     ciphertext_len += len;
 
-    memset(this->plaintext, 0, sizeof(this->plaintext));
-    memset(this->ciphertext, 0, sizeof(this->ciphertext));
+    SecureZeroMemory(this->plaintext, sizeof(this->plaintext));
+    SecureZeroMemory(this->ciphertext, sizeof(this->ciphertext));
     EVP_CIPHER_CTX_cleanup(this->ctx);
     EVP_CIPHER_CTX_free(this->ctx);
     this->ctx = NULL;
@@ -106,14 +110,24 @@ void encryption::derive_key(const char* password, int passlen, const std::string
 
 void encryption::create_salt(std::string& salt, size_t size)
 {
-    // TODO: iv currently deducable from salt
-    // create salt from hash of iv
-    for(size_t i = 0; i < size; i++)
-        salt.push_back(rand() % 256);
+    salt.clear();
+
+    unsigned char* buffer = new unsigned char[size];
+    if(RAND_bytes(buffer, (int)size) != 1)
+    {
+        // TODO: handle properly
+        delete [] buffer;
+        throw;
+    }
+    salt.assign((char*)buffer, size);
+    delete [] buffer;
 }
 
 void encryption::create_iv(unsigned char* iv_128)
 {
-    for(size_t i = 0; i < (128 / 8); i++)
-        iv_128[i] = rand() % 256;
+    if(RAND_bytes(iv_128, 128 / 8) != 1)
+    {
+        // TODO: handle properly
+        throw;
+    }
 }

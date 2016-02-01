@@ -46,6 +46,7 @@ public:
     formview(window&);
     ~formview();
 
+    void reload_items();
     void open_file(const std::string& filename);
     void on_loadfile();
     void load_archive(const char* pass_160, const std::string& path);

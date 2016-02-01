@@ -25,6 +25,7 @@ public:
         explicit error(const char* what) : exception(what) {}
     };
 private:
+    static bool random_initalized;
     EVP_CIPHER_CTX* ctx;
     unsigned char plaintext[plaintext_size];
     unsigned char ciphertext[plaintext_size + block_size];

@@ -9,10 +9,9 @@ private:
     CEdit edit;
     CFont* font;
 public:
+    enum {IDD = IDD_TEXTVIEW};
     char* modified_text;
     int text_len;
-
-    enum {IDD = IDD_TEXTVIEW};
 
     textview();
     ~textview();

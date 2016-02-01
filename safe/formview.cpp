@@ -24,6 +24,14 @@ formview::~formview()
         this->archive->save_archive();
 }
 
+void formview::reload_items()
+{
+    this->listview_m.DeleteAllItems();
+    const filesystem::files_t& files = this->archive->get_all();
+    for(filesystem::files_t::const_iterator it = files.begin(); it != files.end(); it++)
+        this->add_item(it->second, it->first.size());
+}
+
 void formview::open_file(const std::string& filename)
 {
     if(this->archive.get() == NULL)
@@ -35,8 +43,6 @@ void formview::open_file(const std::string& filename)
     if(file == this->archive->get_all().end())
         return;
     data.assign(file->first.data(), file->first.size());
-    data += '\0';
-    //txtvw.set_text(data);
     txtvw.DoModal(GetActiveWindow(), (LPARAM)&data);
     if(txtvw.text_len >= 0)
     {
@@ -49,15 +55,7 @@ void formview::open_file(const std::string& filename)
                 file->first.push_back(txtvw.modified_text[i]);
         }
 
-        /*std::ostringstream sts;
-        sts.imbue(std::locale(""));
-        sts << txtvw.text_len;
-        this->listview_m.SetItemText(item.iItem, 1, sts.str().c_str());*/
-        // populate list again
-        this->listview_m.DeleteAllItems();
-        const filesystem::files_t& files = this->archive->get_all();
-        for(filesystem::files_t::const_iterator it = files.begin(); it != files.end(); it++)
-            this->add_item(it->second, it->first.size());
+        this->reload_items();
     }
 }
 
@@ -104,9 +102,7 @@ void formview::load_archive(const char* pass_160, const std::string& path)
         this->archive.reset(new filesystem);
         this->archive->load_archive(path, pass_160);
 
-        const filesystem::files_t& files = this->archive->get_all();
-        for(filesystem::files_t::const_iterator it = files.begin(); it != files.end(); it++)
-            this->add_item(it->second, it->first.size());
+        this->reload_items();
     }
     catch(encryption::error e)
     {

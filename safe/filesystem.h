@@ -7,7 +7,7 @@
 #include <utility>
 
 // TODO: drop extension field
-// TODO: secure memory
+// TODO: lock memory
 class filesystem
 {
 public:
@@ -38,10 +38,12 @@ private:
 
     void read_file(const char* password_160);
     void write_file();
+    void clear_files();
 public:
     filesystem();
     ~filesystem();
     
+    void create_archive(const std::string& path, const char* password_160);
     // throws and invalids object
     void load_archive(const std::string& path, const char* password_160);
     // won't throw as of now
